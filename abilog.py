@@ -38,8 +38,8 @@ def info (msj):
 
 def aviso (msj):
     logging.warning(msj)
-    print "AVISO: %s" % msj   
+    print "AVISO: %s" % msj
 
 def error (msj):
     logging.error(msj)
-    print "ERROR: %s" % msj    
+    print "ERROR: %s" % msj
