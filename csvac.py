@@ -68,7 +68,7 @@ INTERACTIVO = True
 #  Pywikibot y sin subir ningún fichero, o en el modo habitual (False),
 #  destinado a subir ficheros a Wikimedia Commons.
 #
-SIMULACION = True
+SIMULACION = False
 
 #  La variable [correoAyuda] alberga la dirección de correo electrónico
 #  a la que el operador del programa deberá dirigirse en caso de que
@@ -182,8 +182,10 @@ def login_pwb ():
     """Inicia sesión en Wikimedia Commons con Pywikibot core."""
     #bot = raw_input("Nombre de usuario: ")
     if not SIMULACION:
-        print login.main(u"-family:commons",
-                         u"-lang:commons")
+        #login.main(u"-family:commons",
+        #           u"-lang:commons")
+        login.main(u"-family:test",
+                   u"-lang:test")
 
 def subir (nombrecsv, datos, f, fdestino, descr):
     """Trata de subir el fichero de nombre [f] a Wikimedia Commons con
@@ -314,6 +316,8 @@ def cargar_fila (nombrecsv):
             tmp = int(contenido) + 1
         except:
             contenido = str(-1)
+            abilog.debug("El contenido de «{}.NOBORRAR.ifila» es "
+                         "«{}».".format(nombrecsv, contenido))
         if len(contenido) < 8 and int(contenido) >= 0:
             abilog.debug(u"El archivo «{}.NOBORRAR.ifila» existe y "
                          u"su contenido parece coherente "
@@ -576,14 +580,77 @@ def reintentar (nombrecsv,datos,f,fdestino,descr):
             reintentar(nombrecsv,datos,f,fdestino,descr)
     else:
         abilog.debug(u"Se escoge no reintentar la subida.")
+        flog = open(u"{}{}.fallidas.log".format(csvcfg.entorno("dirarchivos"),
+                                                nombrecsv),
+                    'a')
+        flog.write("{}\n".format(f))
+        flog.close()
+        
 
 #### Procesamiento #####################################################
 
 def bucle (nombrecsv, datos, nultimof):
     correctos = 0
-    tanda = csvcfg.cte("tanda0")
+    
+    # Número de archivos que tratar en la tanda inicial
+    tanda = 5 # por defecto
+    try:
+        tmp = int(csvcfg.cte("tanda0"))
+        if tmp > 0:
+            tanda = tmp
+    except:
+        abilog.debug("No se ha definido el número de archivos que "
+                     "tratar en la tanda inicial.")
+        abilog.debug("Se asume {}.".format(tanda))
+    
+    # Número fijo de archivos que aprobar manualmente en cada tanda
+    if tanda < 3:
+        conAprobacion = tanda # por defecto
+    else:
+        conAprobacion = 3 # por defecto
+    try:
+        tmp = int(csvcfg.cte("conaprobacion"))
+        if tmp < conAprobacion and tmp >= 0:
+            conAprobacion = tmp
+            abilog.debug("Número de archivos que aprobar manualmente "
+                         "en cada tanda: {}".format(conAprobacion))
+        else:
+            abilog.error("La configuración del número de archivos que "
+                         "aprobar manualmente en cada tanda ({}) no es "
+                         "coherente.".format(tmp))
+            abilog.info("Se asume {}.".format(conAprobacion))
+            
+    except:
+        abilog.info("No se ha definido el número de archivos que "
+                    "aprobar manualmente en cada tanda.")
+        abilog.info("Se asume {}.".format(conAprobacion))
+    
+    # Tiempo de trabajo ininterrumpido a partir del que sugerir descansar
+    tdescanso = 1800 # 1800 s = 30 min, por defecto
+    try:
+        tdescanso = csvcfg.cte("tdescanso") * 60 # cálculos en segundos
+        abilog.debug("Tiempo de trabajo ininterrumpido en minutos a "
+                     "partir del que sugerir un descanso al operador: "
+                     "{}".format(tdescanso/60))
+    except:
+        abilog.debug("No se ha definido el tiempo de trabajo "
+                     "ininterrumpido en minutos a partir del que "
+                     "sugerir un descanso al operador.")
+        abilog.debug("Por defecto, se asume {}.".format(tdescanso/60))
+    
+    # Factor de crecimiento en el número de archivos en cada tanda
+    crecimientoTanda = 1.5 # por defecto
+    try:
+        crecimientoTanda = csvcfg.cte("crecimientotanda")
+        abilog.debug("Factor de crecimiento en el número de archivos que "
+                     "tratar en cada tanda: {}".format(crecimientoTanda))
+    except:
+        abilog.debug("No se ha definido un factor de crecimiento en el "
+                     "número de archivos que tratar en cada tanda.")
+        abilog.debug("Por defecto, se asume {}.".format(crecimientoTanda))
+    
+    # Bucle
     t0 = time.time()
-    tdescanso = csvcfg.cte("tdescanso") * 60 # cálculos en segundos
     for nfila in range(nultimof+1, len(datos)):
         if correctos == tanda:
             print
@@ -593,7 +660,7 @@ def bucle (nombrecsv, datos, nultimof):
                         u"ahora: {}".format(nombrecsv,nfila-1))
             abilog.info(u"Total de ficheros por subir: "
                         u"{}".format(len(datos)-nfila))
-            tanda = int(tanda * csvcfg.cte("crecimientotanda"))
+            tanda = int(tanda * crecimientoTanda)
             if INTERACTIVO:
                 tmp = random.randint(0, 6)
                 if tmp == 0:
@@ -662,7 +729,7 @@ def bucle (nombrecsv, datos, nultimof):
         print descr
         print ("".center(80, '-'))
         if INTERACTIVO:
-            if correctos < csvcfg.cte("conaprobacion"):
+            if correctos < conAprobacion:
                 preg = u"¿Son correctos los datos indicados?"
                 time.sleep(4.5)
                 r = sn(preg)
