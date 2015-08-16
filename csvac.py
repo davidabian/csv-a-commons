@@ -619,7 +619,6 @@ def bucle (nombrecsv, datos, nultimof):
                          "aprobar manualmente en cada tanda ({}) no es "
                          "coherente.".format(tmp))
             abilog.info("Se asume {}.".format(conAprobacion))
-            
     except:
         abilog.info("No se ha definido el número de archivos que "
                     "aprobar manualmente en cada tanda.")
