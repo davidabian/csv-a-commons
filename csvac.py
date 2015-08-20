@@ -133,31 +133,29 @@ def comprobar_pwb():
                    os.path.join("..","..","Pywikipediabot",""),]
     directorio = None
     for dirPosible in dirPosibles:
-        check1 = "{}pwb.py".format(dirPosible)
-        check2 = "{}upload.py".format(os.path.join(dirPosible,
-                                                   "scripts",
-                                                   ""))
+        check1 = os.path.join(dirPosible,"pwb.py")
+        check2 = os.path.join(dirPosible,"scripts","upload.py")
         if os.path.isfile(check1) and os.path.isfile(check2):
             directorio = dirPosible
             break
     if directorio == None:
-        abilog.error(u"No se encuentra una instalación de Pywikibot "
-                     u"core en las proximidades del directorio actual.")
+        print(u"ERROR. No se encuentra una instalación de Pywikibot "
+              u"core en las proximidades del directorio actual.")
     return directorio
 
-dirpwb = comprobar_pwb()
-if dirpwb:
-    sys.path.append(dirpwb)
+DIR_PWB = comprobar_pwb()
+if DIR_PWB:
+    sys.path.append(DIR_PWB)
     import pwb
-    sys.path.append("{}scripts".format(dirpwb))
+    sys.path.append(os.path.join(DIR_PWB,"scripts"))
     import upload
     import login
 
 #### Hashes ############################################################
 
-def sha1_f (f):
+def sha1_f (dirarchivos, f):
     """Devuelve el SHA-1 del fichero [f], o None en caso de error."""
-    f = os.path.join(csvcfg.entorno("dirarchivos"), f)
+    f = os.path.join(dirarchivos, f)
     if not SIMULACION:
         with open(f, 'rb') as af:
             try:
@@ -168,9 +166,9 @@ def sha1_f (f):
         sha1 = None
     return sha1
 
-def log_hash (f):
+def log_hash (dirarchivos, f):
     """Registra el hash SHA-1 del fichero [f] en el de depuración."""
-    sha1 = sha1_f(f)
+    sha1 = sha1_f(dirarchivos, f)
     if sha1:
         abilog.debug(u"{}: {}".format(f, sha1))
     else:
@@ -187,7 +185,7 @@ def login_pwb ():
         login.main(u"-family:test",
                    u"-lang:test")
 
-def subir (nombrecsv, datos, f, fdestino, descr):
+def subir (dirarchivos, nombrecsv, datos, f, fdestino, descr):
     """Trata de subir el fichero de nombre [f] a Wikimedia Commons con
     el nombre [fdestino] y la descripción [descr].
     """
@@ -196,16 +194,17 @@ def subir (nombrecsv, datos, f, fdestino, descr):
                     u'-lang:test',
         #upload.main(u'-family:commons',
         #            u'-lang:commons',
+                    u'-keep',
                     u'-noverify',
                     u'-abortonwarn',
                     u'-filename:{}'.format(fdestino),
-                    os.path.join(csvcfg.entorno("dirarchivos"), f),
+                    os.path.join(dirarchivos, f),
                     u'{}'.format(descr))
     return 0
 
 #### CSV ###############################################################
 
-def leer_csv (nombrecsv):
+def leer_csv (dirarchivos, nombrecsv):
     """Lee el fichero de CSV de nombre [nombrecsv], decodifica su
     contenido usando UTF-8 y lo devuelve en forma de lista.
     
@@ -216,10 +215,9 @@ def leer_csv (nombrecsv):
     En caso de error, devuelve la lista vacía.
     """
     datos = []
-    if os.path.isfile(os.path.join(csvcfg.entorno("dirarchivos"),
-                                   nombrecsv)):
+    if os.path.isfile(os.path.join(dirarchivos, nombrecsv)):
         abilog.info(u"Iniciando lectura del fichero «{}».".format(nombrecsv))
-        with open("{}{}".format(csvcfg.entorno("dirarchivos"),
+        with open("{}{}".format(dirarchivos,
                                 nombrecsv), 'rb') as f:
             reader = csv.reader(f)
             for fila in reader:
@@ -292,22 +290,19 @@ def copia_seguridad (nombrefichero):
                 u"legible.".format(nombrecsv))
     return None
 
-def guardar_fila (nombrecsv, ifila):
+def guardar_fila (dirarchivos, nombrecsv, ifila):
     """Guarda [ifila] como contenido del fichero de texto
-    [nombrecsv].NOBORRAR.ifila, ubicado en
-    [csvcfg.entorno("dirarchivos")].
+    [nombrecsv].NOBORRAR.ifila, ubicado en [dirarchivos].
     """
-    f = open(u"{}{}.NOBORRAR.ifila".format(csvcfg.entorno("dirarchivos"),
-                                           nombrecsv), 'w')
+    f = open(u"{}{}.NOBORRAR.ifila".format(dirarchivos, nombrecsv), 'w')
     f.write(str(ifila))
     f.close()
 
-def cargar_fila (nombrecsv):
+def cargar_fila (dirarchivos, nombrecsv):
     """Carga el contenido del fichero de texto
     [nombrecsv].NOBORRAR.ifila y lo devuelve.
     """
-    rutaf = "{}{}.NOBORRAR.ifila".format(csvcfg.entorno("dirarchivos"),
-                                         nombrecsv)
+    rutaf = "{}{}.NOBORRAR.ifila".format(dirarchivos, nombrecsv)
     if os.path.isfile(rutaf):
         f = open(rutaf)
         contenido = f.read()
@@ -356,7 +351,7 @@ def archivo_destino_de_fila (nombrecsv, datos, nfila):
 
 #### Comprobaciones ####################################################
 
-def comprobar_ficheros (nombrecsv, datos):
+def comprobar_ficheros (dirarchivos, nombrecsv, datos):
     """Comprueba:
         * que no haya filas con nombres de ficheros vacíos;
         * que no haya filas con nombres de ficheros repetidos;
@@ -373,8 +368,7 @@ def comprobar_ficheros (nombrecsv, datos):
                     u"«{}» de «{}».".format(csvcfg.entorno("nombresorigen"),
                                             nombrecsv))
         else:
-            rutafichero = os.path.join(csvcfg.entorno("dirarchivos"),
-                                       fila[ncamponombre])
+            rutafichero = os.path.join(dirarchivos, fila[ncamponombre])
             
             if not SIMULACION and not os.path.isfile(rutafichero):
                 return (u"No se encuentra el fichero «{}». "
@@ -437,7 +431,7 @@ def comprobar_campos (nombrecsv, datos):
     abilog.info(u"Los nombres de los campos son válidos.")
     return None
 
-def comprobar_todo (nombrecsv, datos):
+def comprobar_todo (dirarchivos, nombrecsv, datos):
     """Comprueba si el conjunto de datos [datos] es válido.
     
     Si no es válido, devuelve un motivo. Si lo es, devuelve None.
@@ -464,7 +458,7 @@ def comprobar_todo (nombrecsv, datos):
         comprobacion = comprobar_campos(nombrecsv, datos)
         if comprobacion == None:
             abilog.info(u"Comprobando ficheros. Espere, por favor.")
-            comprobacion = comprobar_ficheros(nombrecsv, datos)
+            comprobacion = comprobar_ficheros(dirarchivos, nombrecsv, datos)
             if comprobacion == None:
                 if lendatos > 10000:
                     division = 1000
@@ -492,14 +486,14 @@ def comprobar_todo (nombrecsv, datos):
                         abilog.info(u"Comprobación completada.")
     return comprobacion
 
-def comprobar_subida (f):
+def comprobar_subida (dirarchivos, f):
     """Comprueba si el fichero [f] existe íntegramente en Commons.
     
     Devuelve None en caso afirmativo, o un mensaje de error en caso
     contrario.
     Se basa en SHA-1 y en la API de Wikimedia Commons.
     """
-    aisha1 = sha1_f(f)
+    aisha1 = sha1_f(dirarchivos, f)
     abilog.debug(u"SHA-1 de {}: {}".format(f, aisha1))
     if not SIMULACION:
         url = u"https://commons.wikimedia.org/w/api.php?action=query&" \
@@ -568,20 +562,19 @@ def sn (pregunta):
         elif r == "N":
             return False
 
-def reintentar (nombrecsv,datos,f,fdestino,descr):
+def reintentar (dirarchivos,nombrecsv,datos,f,fdestino,descr):
     abilog.debug(u"Se pregunta si reintentar la subida.")
     r = sn(u"¿Desea reintentar la subida?")
     if r:
         abilog.debug(u"Se escoge reintentar la subida.")
-        subir(nombrecsv,datos,f,fdestino,descr)
-        comprobacion = comprobar_subida(f)
+        subir(dirarchivos,nombrecsv,datos,f,fdestino,descr)
+        comprobacion = comprobar_subida(dirarchivos,f)
         if comprobacion:
             abilog.error(comprobacion)
-            reintentar(nombrecsv,datos,f,fdestino,descr)
+            reintentar(dirarchivos,nombrecsv,datos,f,fdestino,descr)
     else:
         abilog.debug(u"Se escoge no reintentar la subida.")
-        flog = open(u"{}{}.fallidas.log".format(csvcfg.entorno("dirarchivos"),
-                                                nombrecsv),
+        flog = open(u"{}{}.fallidas.log".format(dirarchivos, nombrecsv),
                     'a')
         flog.write("{}\n".format(f))
         flog.close()
@@ -589,7 +582,7 @@ def reintentar (nombrecsv,datos,f,fdestino,descr):
 
 #### Procesamiento #####################################################
 
-def bucle (nombrecsv, datos, nultimof):
+def bucle (dirarchivos, nombrecsv, datos, nultimof):
     correctos = 0
     
     # Número de archivos que tratar en la tanda inicial
@@ -619,6 +612,7 @@ def bucle (nombrecsv, datos, nultimof):
                          "aprobar manualmente en cada tanda ({}) no es "
                          "coherente.".format(tmp))
             abilog.info("Se asume {}.".format(conAprobacion))
+            
     except:
         abilog.info("No se ha definido el número de archivos que "
                     "aprobar manualmente en cada tanda.")
@@ -742,15 +736,15 @@ def bucle (nombrecsv, datos, nultimof):
                     print (u"Gracias.")
                     time.sleep(20)
                     sys.exit()
-        subir(nombrecsv,datos,f,fdestino,descr)
-        comprobacion = comprobar_subida(f)
+        subir(dirarchivos,nombrecsv,datos,f,fdestino,descr)
+        comprobacion = comprobar_subida(dirarchivos,f)
         if comprobacion:
             abilog.error(comprobacion)
-            reintentar(nombrecsv,datos,f,fdestino,descr)
-        guardar_fila(nombrecsv,nfila)
+            reintentar(dirarchivos,nombrecsv,datos,f,fdestino,descr)
+        guardar_fila(dirarchivos,nombrecsv,nfila)
         correctos += 1
 
-def fin (nombrecsv):
+def fin (dirarchivos, nombrecsv):
     """Notifica el fin del proceso de subida y reinicializa los datos
     guardados.
     """
@@ -761,155 +755,210 @@ def fin (nombrecsv):
     abilog.info(u"El proceso de subida se da por concluido.")
     abilog.info(u"Por favor, revise los resultados.")
     abilog.info(u"Mil gracias por su contribución.")
-    log_hash(u"{}.log".format(nombrecsv))
+    log_hash(dirarchivos, u"{}.log".format(nombrecsv))
     print
     print ("".center(80, '*'))
     print
-    guardar_fila(nombrecsv, 0)
+    guardar_fila(dirarchivos,nombrecsv, 0)
     time.sleep(10)
 
 def main ():
+    if not (DIR_PWB or SIMULACION):
+        sys.exit()
+    
+    # Directorio en que se encuentran los ficheros por subir y el CSV
+    try:
+        dirarchivos = csvcfg.entorno("dirarchivos")
+    except:
+        dirarchivos = None
+    if not os.path.isdir(dirarchivos):
+        dirarchivos = None
+    if INTERACTIVO:
+        while (not dirarchivos):
+            print(u"\nEscriba la ruta completa del directorio en que "
+                  u"se encuentran los ficheros que subir y el fichero "
+                  u"de CSV.")
+            tmp = raw_input("> ")
+            if not tmp == "" and os.path.isdir(tmp):
+                dirarchivos = tmp
+            else:
+                print(u"Error. El directorio indicado no es válido o "
+                      u"no existe.")
+    elif not dirarchivos:
+        print(u"\nError. No se ha definido la ruta completa del "
+              u"directorio en que se encuentran los ficheros que "
+              u"subir y el fichero de CSV en el archivo de "
+              u"configuración.")
+        sys.exit()
+            
+    # Nombre del fichero de CSV, en [dirarchivos]
+    try:
+        nombrecsv = csvcfg.entorno("nombrecsv")
+    except:
+        nombrecsv = None
+    if nombrecsv:
+        if not os.path.isfile(nombrecsv):
+            nombrecsv = None
+    if INTERACTIVO:
+        while (not nombrecsv):
+            print(u"\nEscriba el nombre del fichero de CSV que "
+                  u"contiene la información de la subida. Este ha de "
+                  u"encontrarse en el directorio indicado, "
+                  u"«{}».".format(dirarchivos))
+            tmp = raw_input("> ")
+            if os.path.isfile(os.path.join(dirarchivos, tmp)):
+                nombrecsv = tmp
+            else:
+                print(u"Error. El fichero «{}» no "
+                      u"existe.".format(os.path.join(dirarchivos, tmp)))
+    elif not nombrecsv:
+        print(u"\nError. No se ha definido el nombre del fichero de "
+              u"CSV en el archivo de configuración.")
+        sys.exit()
+    
     print chr(27) + "[2J" # limpiar pantalla
-    nombrecsv = csvcfg.entorno("nombrecsv")
     abilog.config(u"{}.log".format(nombrecsv)) # fichero de registros
     abilog.debug(u"---")
-    abilog.debug(u"Se abre el programa.")
+    abilog.debug(u"Se inicia el programa.")
     try:
         abilog.debug(u"Operador/a: {}".format(getpass.getuser()))
     except:
-        pass
-    log_hash(u"{}.log".format(nombrecsv))
-    if dirpwb or SIMULACION:
-        abilog.info(u"El directorio de Pywikibot encontrado es " \
-                    u"«{}».".format(dirpwb))
-        error = None
-        try:
-            urllib.urlopen("https://commons.wikimedia.org/")
-        except:
-            error = u"No puede accederse a Wikimedia Commons."
-        try:
-            urllib.urlopen("https://commons.wikimedia.org/w/api.php")
-        except:
-            error = u"No puede accederse a la API de Wikimedia " \
-                    u"Commons (https://commons.wikimedia.org/w/api.php)."
-        if not error:
-            abilog.info(u"La conexión se ha comprobado "
-                        u"satisfactoriamente.")
-            login_pwb()
-            abilog.info(u"Creando copias de seguridad.")
-            error = copia_seguridad("{}{}".format(csvcfg.entorno("dirarchivos"),
-                                                  nombrecsv))
-        if error:
-            abilog.error(error)
-        else:
-            datos = leer_csv(nombrecsv)
-            if datos:
-                abilog.info(u"Lectura completada.")
-                #print_datos(datos)
-                abilog.info(u"Total de archivos contemplados "
-                            u"para la subida: {}".format(len(datos)-1))
-                abilog.info(u"Total de campos de información "
-                            u"detectados: {}".format(len(datos[0])))
-                error = comprobar_todo(nombrecsv, datos)
-                if error:
-                    abilog.error(error)
-                else:
-                    ifila = int(cargar_fila(nombrecsv))
-                    if ifila == 0:
-                        guardar_fila(nombrecsv,ifila)
-                    abilog.info(u"Ficheros de {} tratados hasta "
-                                u"ahora: {}".format(nombrecsv,ifila))
-                    abilog.info(u"Ficheros por subir: "
-                                u"{}".format(len(datos)-ifila-1))
-                    time.sleep(2)
-                    print
-                    nultimof = int(cargar_fila(nombrecsv))
-                    ultimof = archivo_de_fila(nombrecsv, datos, nultimof)
-                    if nultimof > 0:
-                        abilog.info(u"Hay datos guardados de una "
-                                    u"sesión anterior de la subida "
-                                    u"de archivos de "
-                                    u"«{}».".format(nombrecsv))
-                        abilog.info(u"Según los cálculos, el "
-                                    u"último fichero tratado fue "
-                                    u"«{}», de la {}.ª "
-                                    u"fila.".format(ultimof, nultimof))
-                        if INTERACTIVO:
-                            desconocido = True
-                            while (desconocido):
-                                print (u"\nEscriba «REANUDAR» si quiere "
-                                       u"continuar ya con el proceso de "
-                                       u"subida de ficheros contemplados "
-                                       u"en «{}» a Wikimedia Commons en "
-                                       u"el punto indicado, o bien «REINICIAR» "
-                                       u"si desea eliminar la sesión guardada "
-                                       u"y comenzar todo el proceso de subida "
-                                       u"desde el principio.\n".format(nombrecsv))
-                                abilog.debug(u"Se pide la escritura de "
-                                             u"«REANUDAR» o de «REINICIAR».")
-                                r = raw_input("> ")
-                                abilog.debug("Se escribe «{}».".format(r))
-                                r = r.upper()
-                                if r == "REANUDAR":
-                                    desconocido = False
-                                elif r == "REINICIAR":
-                                    abilog.debug(u"Se pide confirmación.")
-                                    preg = (u"¿Está seguro de que quiere "
-                                            u"borrar todos los progresos "
-                                            u"para {} e iniciar el proceso "
-                                            u"de nuevo?".format(nombrecsv))
-                                    if sn(preg):
-                                        abilog.debug(u"Se confirma.")
-                                        print
-                                        abilog.info(u"Se han borrado "
-                                                    u"todos los progresos "
-                                                    u"para {}.".format(nombrecsv))
-                                        abilog.info(u"Se empezará de cero.")
-                                        nultimof = 0
-                                        guardar_fila(nombrecsv,0)
-                                        desconocido = False
-                                    else:
-                                        abilog.debug(u"No se confirma.")
-                    else:
-                        nultimof = 0
-                        if INTERACTIVO:
-                            print (u"\nEscriba «COMENZAR» si ha revisado "
-                                   u"concienzudamente la información del "
-                                   u"fichero «{}» y quiere iniciar ya el "
-                                   u"proceso de subida de los archivos "
-                                   u"multimedia contemplados a Wikimedia "
-                                   u"Commons.\n".format(nombrecsv))
-                            abilog.debug(u"Se pide la escritura de "
-                                         u"«COMENZAR».")
-                            comenzar = False
-                            while (not comenzar):
-                                r = raw_input("> ")
-                                abilog.debug(u"Se escribe «{}».".format(r))
-                                if r.upper() == "COMENZAR":
-                                    comenzar = True
-                    print
-                    print (" AVISO IMPORTANTE ".center(80, '#'))
-                    print (u"\nDESDE ESTE MOMENTO, NO MODIFIQUE EL FICHERO "
-                           u"DE CSV «{}», NI LOS FICHEROS POR SUBIR, NI "
-                           u"LOS DE CONFIGURACIÓN DEL PROGRAMA, NI NINGÚN "
-                           u"OTRO FICHERO UTILIZADO O, SIMPLEMENTE, LEÍDO "
-                           u"POR ESTE PROGRAMA, NI SIQUIERA AUNQUE CIERRE "
-                           u"EL PROGRAMA Y LO VUELVA A "
-                           U"ABRIR.".format(nombrecsv))
-                    print (u"HACERLO DERIVARÁ EN UN COMPORTAMIENTO "
-                           u"IMPREDECIBLE, Y USTED, OPERADOR, SE HARÁ "
-                           u"RESPONSABLE DE TODOS LOS DAÑOS "
-                           U"OCASIONADOS.")
-                    print (u"SI VERDADERAMENTE NECESITA EFECTUAR ALGUNA "
-                           u"MODIFICACIÓN A PARTIR DE AHORA, EXPONGA LA "
-                           u"SITUACIÓN EN UN CORREO ELECTRÓNICO DIRIGIDO "
-                           u"A <{}>. GRACIAS.\n".format(correoAyuda))
-                    print ("".center(80, '#'))
-                    print
+        abilog.debug(u"Operador/a: ???")
+    log_hash(dirarchivos, u"{}.log".format(nombrecsv))
+    abilog.info(u"El directorio de Pywikibot encontrado es "
+                u"«{}».".format(DIR_PWB))
+    error = None
+    try:
+        urllib.urlopen("https://commons.wikimedia.org/")
+    except:
+        error = u"No puede accederse a Wikimedia Commons."
+    try:
+        urllib.urlopen("https://commons.wikimedia.org/w/api.php")
+    except:
+        error = u"No puede accederse a la API de Wikimedia " \
+                u"Commons (https://commons.wikimedia.org/w/api.php)."
+    if not error:
+        abilog.info(u"La conexión se ha comprobado "
+                    u"satisfactoriamente.")
+        login_pwb()
+        abilog.info(u"Creando copias de seguridad.")
+        error = copia_seguridad("{}{}".format(dirarchivos,
+                                              nombrecsv))
+    if error:
+        abilog.error(error)
+    else:
+        datos = leer_csv(dirarchivos, nombrecsv)
+        if datos:
+            abilog.info(u"Lectura completada.")
+            #print_datos(datos)
+            abilog.info(u"Total de archivos contemplados "
+                        u"para la subida: {}".format(len(datos)-1))
+            abilog.info(u"Total de campos de información "
+                        u"detectados: {}".format(len(datos[0])))
+            error = comprobar_todo(dirarchivos, nombrecsv, datos)
+            if error:
+                abilog.error(error)
+            else:
+                ifila = int(cargar_fila(dirarchivos,nombrecsv))
+                if ifila == 0:
+                    #
+                    #  En caso de error al intentar reanudar la sesión,
+                    #  [ifila] será 0, y tal valor se guarda en el
+                    #  fichero para reiniciar el proceso de subida.
+                    #
+                    guardar_fila(dirarchivos,nombrecsv,ifila)
+                abilog.info(u"Ficheros de {} tratados hasta "
+                            u"ahora: {}".format(nombrecsv,ifila))
+                abilog.info(u"Ficheros por subir: "
+                            u"{}".format(len(datos)-ifila-1))
+                time.sleep(2)
+                print
+                ultimof = archivo_de_fila(nombrecsv, datos, ifila)
+                if ifila > 0:
+                    abilog.info(u"Hay datos guardados de una "
+                                u"sesión anterior de la subida "
+                                u"de archivos de "
+                                u"«{}».".format(nombrecsv))
+                    abilog.info(u"Según los cálculos, el "
+                                u"último fichero tratado fue "
+                                u"«{}», de la {}.ª "
+                                u"fila.".format(ultimof, ifila))
                     if INTERACTIVO:
-                        time.sleep(10)
-                    bucle(nombrecsv,datos,nultimof)
-                    fin(nombrecsv)
+                        desconocido = True
+                        while (desconocido):
+                            print (u"\nEscriba «REANUDAR» si quiere "
+                                   u"continuar ya con el proceso de "
+                                   u"subida de ficheros contemplados "
+                                   u"en «{}» a Wikimedia Commons en "
+                                   u"el punto indicado, o bien «REINICIAR» "
+                                   u"si desea eliminar la sesión guardada "
+                                   u"y comenzar todo el proceso de subida "
+                                   u"desde el principio.\n".format(nombrecsv))
+                            abilog.debug(u"Se pide la escritura de "
+                                         u"«REANUDAR» o de «REINICIAR».")
+                            r = raw_input("> ")
+                            abilog.debug("Se escribe «{}».".format(r))
+                            r = r.upper()
+                            if r == "REANUDAR":
+                                desconocido = False
+                            elif r == "REINICIAR":
+                                abilog.debug(u"Se pide confirmación.")
+                                preg = (u"¿Está seguro de que quiere "
+                                        u"borrar todos los progresos "
+                                        u"para {} e iniciar el proceso "
+                                        u"de nuevo?".format(nombrecsv))
+                                if sn(preg):
+                                    abilog.debug(u"Se confirma.")
+                                    print
+                                    abilog.info(u"Se han borrado "
+                                                u"todos los progresos "
+                                                u"para {}.".format(nombrecsv))
+                                    abilog.info(u"Se empezará de cero.")
+                                    ifila = 0
+                                    guardar_fila(dirarchivos,nombrecsv,0)
+                                    desconocido = False
+                                else:
+                                    abilog.debug(u"No se confirma.")
+                else:
+                    ifila = 0
+                    if INTERACTIVO:
+                        print (u"\nEscriba «COMENZAR» si ha revisado "
+                               u"concienzudamente la información del "
+                               u"fichero «{}» y quiere iniciar ya el "
+                               u"proceso de subida de los archivos "
+                               u"multimedia contemplados a Wikimedia "
+                               u"Commons.\n".format(nombrecsv))
+                        abilog.debug(u"Se pide la escritura de "
+                                     u"«COMENZAR».")
+                        comenzar = False
+                        while (not comenzar):
+                            r = raw_input("> ")
+                            abilog.debug(u"Se escribe «{}».".format(r))
+                            if r.upper() == "COMENZAR":
+                                comenzar = True
+                print
+                print (" AVISO IMPORTANTE ".center(80, '#'))
+                print (u"\nDESDE ESTE MOMENTO, NO MODIFIQUE EL FICHERO "
+                       u"DE CSV «{}», NI LOS FICHEROS POR SUBIR, NI "
+                       u"LOS DE CONFIGURACIÓN DEL PROGRAMA, NI NINGÚN "
+                       u"OTRO FICHERO UTILIZADO O, SIMPLEMENTE, LEÍDO "
+                       u"POR ESTE PROGRAMA, NI SIQUIERA AUNQUE CIERRE "
+                       u"EL PROGRAMA Y LO VUELVA A "
+                       U"ABRIR.".format(nombrecsv))
+                print (u"HACERLO DERIVARÁ EN UN COMPORTAMIENTO "
+                       u"IMPREDECIBLE, Y USTED, OPERADOR, SE HARÁ "
+                       u"RESPONSABLE DE TODOS LOS DAÑOS "
+                       U"OCASIONADOS.")
+                print (u"SI VERDADERAMENTE NECESITA EFECTUAR ALGUNA "
+                       u"MODIFICACIÓN A PARTIR DE AHORA, EXPONGA LA "
+                       u"SITUACIÓN EN UN CORREO ELECTRÓNICO DIRIGIDO "
+                       u"A <{}>. GRACIAS.\n".format(correoAyuda))
+                print ("".center(80, '#'))
+                print
+                if INTERACTIVO:
+                    time.sleep(10)
+                bucle(dirarchivos,nombrecsv,datos,ifila)
+                fin(dirarchivos,nombrecsv)
 
 if __name__ == '__main__':
     main()
