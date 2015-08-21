@@ -180,20 +180,20 @@ def login_pwb ():
     """Inicia sesión en Wikimedia Commons con Pywikibot core."""
     #bot = raw_input("Nombre de usuario: ")
     if not SIMULACION:
-        #login.main(u"-family:commons",
-        #           u"-lang:commons")
-        login.main(u"-family:test",
-                   u"-lang:test")
+        #login.main(u"-family:test",
+        #           u"-lang:test")
+        login.main(u"-family:commons",
+                   u"-lang:commons")
 
 def subir (dirarchivos, nombrecsv, datos, f, fdestino, descr):
     """Trata de subir el fichero de nombre [f] a Wikimedia Commons con
     el nombre [fdestino] y la descripción [descr].
     """
     if not SIMULACION:
-        upload.main(u'-family:test',
-                    u'-lang:test',
-        #upload.main(u'-family:commons',
-        #            u'-lang:commons',
+        #upload.main(u'-family:test',
+        #            u'-lang:test',
+        upload.main(u'-family:commons',
+                    u'-lang:commons',
                     u'-keep',
                     u'-noverify',
                     u'-abortonwarn',
@@ -603,7 +603,7 @@ def bucle (dirarchivos, nombrecsv, datos, nultimof):
         conAprobacion = 3 # por defecto
     try:
         tmp = int(csvcfg.cte("conaprobacion"))
-        if tmp < conAprobacion and tmp >= 0:
+        if tmp < tanda and tmp >= 0:
             conAprobacion = tmp
             abilog.debug("Número de archivos que aprobar manualmente "
                          "en cada tanda: {}".format(conAprobacion))
@@ -612,7 +612,6 @@ def bucle (dirarchivos, nombrecsv, datos, nultimof):
                          "aprobar manualmente en cada tanda ({}) no es "
                          "coherente.".format(tmp))
             abilog.info("Se asume {}.".format(conAprobacion))
-            
     except:
         abilog.info("No se ha definido el número de archivos que "
                     "aprobar manualmente en cada tanda.")
@@ -649,7 +648,7 @@ def bucle (dirarchivos, nombrecsv, datos, nultimof):
             print
             abilog.info(u"Se ha tratado una tanda de {} "
                         u"archivos.".format(tanda))
-            abilog.info(u"Total de ficheros de {} tratados hasta "
+            abilog.info(u"Total de ficheros de «{}» tratados hasta "
                         u"ahora: {}".format(nombrecsv,nfila-1))
             abilog.info(u"Total de ficheros por subir: "
                         u"{}".format(len(datos)-nfila))
