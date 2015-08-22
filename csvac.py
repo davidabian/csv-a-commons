@@ -13,18 +13,11 @@
 #    TODO: Ante la ausencia de constantes o de variables del entorno
 #              que han de definirse en csvcfg, que el programa se las
 #              apañe.
-#    TODO: Al principio del programa, comprobar si la configuración de
-#              csvcfg es coherente, y no continuar en caso contrario.
+#    TODO: Crear un diccionario de configuración obtenido de la
+#              importación de csvcfg y de las posibles preferencias
+#              indicadas por el operador.
 #    TODO: Detectar si la sesión se inicia correctamente con Pywikibot.
 #              Véase T106580 <https://phabricator.wikimedia.org/T106580>.
-#    TODO: Detectar si cada archivo se sube correctamente con Pywikibot.
-#              Véase T106580 <https://phabricator.wikimedia.org/T106580>.
-#    TODO: Aplicar -always a las subidas con upload.py para evitar
-#              dobles confirmaciones por parte del operador y el enorme
-#              malgasto de tiempo y esfuerzo, característica aún no
-#              disponible.
-#              Véase T106412 <https://phabricator.wikimedia.org/T106412>.
-#    TODO: Usar hashes para comprobar la integridad de los ficheros.
 #    TODO: Optimizar funciones y reducir sus costes en tiempo.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
@@ -712,14 +705,14 @@ def bucle (dirarchivos, nombrecsv, datos, nultimof):
         f = archivo_de_fila(nombrecsv, datos, nfila)
         print
         abilog.info(u"Cargando {}.ª fila.".format(nfila))
-        print ("".center(80, '-'))
+        print '-' * 80
         abilog.info(u"Archivo original: {}".format(f))
         fdestino = archivo_destino_de_fila(nombrecsv, datos, nfila)
         abilog.info(u"Archivo en Commons: {}".format(fdestino))
         descr = csvcfg.descripcion(datos,nfila)
         print "Descripción:"
         print descr
-        print ("".center(80, '-'))
+        print '-' * 80
         if INTERACTIVO:
             if correctos < conAprobacion:
                 preg = u"¿Son correctos los datos indicados?"
@@ -749,14 +742,14 @@ def fin (dirarchivos, nombrecsv):
     """
     time.sleep(1)
     print
-    print ("".center(80, '*'))
+    print '*' * 80
     print
     abilog.info(u"El proceso de subida se da por concluido.")
     abilog.info(u"Por favor, revise los resultados.")
     abilog.info(u"Mil gracias por su contribución.")
     log_hash(dirarchivos, u"{}.log".format(nombrecsv))
     print
-    print ("".center(80, '*'))
+    print '*' * 80
     print
     guardar_fila(dirarchivos,nombrecsv, 0)
     time.sleep(10)
@@ -952,7 +945,7 @@ def main ():
                        u"MODIFICACIÓN A PARTIR DE AHORA, EXPONGA LA "
                        u"SITUACIÓN EN UN CORREO ELECTRÓNICO DIRIGIDO "
                        u"A <{}>. GRACIAS.\n".format(correoAyuda))
-                print ("".center(80, '#'))
+                print '#' * 80
                 print
                 if INTERACTIVO:
                     time.sleep(10)
