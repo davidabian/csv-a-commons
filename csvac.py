@@ -12,8 +12,8 @@
 #              posibles pistas de audio posean los valores correctos.
 #    TODO: Detectar si la sesión se inicia correctamente con Pywikibot.
 #              Véase T106580 <https://phabricator.wikimedia.org/T106580>.
-#    TODO: Optimizar funciones y reducir sus costes en tiempo.
-#    TODO: i18n
+#    TODO: Optimizar funciones y reducir sus costes en tiempo y memoria.
+#    TODO: i18n.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
 #
@@ -185,7 +185,8 @@ def subir (cfg, f, fdestino, descr):
                                  verifyDescription=False,
                                  ignoreWarning=False,
                                  targetSite=SITE_PWB,
-                                 aborts=True)
+                                 aborts=True
+                                 always=True)
         bot.run()
     return 0
 
