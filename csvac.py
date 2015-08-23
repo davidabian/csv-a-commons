@@ -136,9 +136,11 @@ DIR_PWB = comprobar_pwb()
 if DIR_PWB:
     sys.path.append(DIR_PWB)
     import pwb
+    import pywikibot
     sys.path.append(os.path.join(DIR_PWB,"scripts"))
     import upload
     import login
+    #SITE_PWB = pywikibot.Site('test', 'test')
     SITE_PWB = pywikibot.Site('commons', 'commons')
 
 #### Hashes ############################################################
@@ -177,13 +179,14 @@ def subir (cfg, f, fdestino, descr):
     el nombre [fdestino] y la descripción [descr].
     """
     if not SIMULACION:
-        bot = UploadRobot(url=[os.path.join(cfg["nombreDir"], f)],
-                          description=descr,
-                          useFilename=fdestino,
-                          keepFilename=True,
-                          verifyDescription=False,
-                          ignoreWarning=False,
-                          targetSite=SITE_PWB)
+        bot = upload.UploadRobot(url=[os.path.join(cfg["nombreDir"], f)],
+                                 description=descr,
+                                 useFilename=fdestino,
+                                 keepFilename=True,
+                                 verifyDescription=False,
+                                 ignoreWarning=False,
+                                 targetSite=SITE_PWB,
+                                 aborts=True)
         bot.run()
     return 0
 
