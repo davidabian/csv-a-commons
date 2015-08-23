@@ -14,6 +14,8 @@
 #              Véase T106580 <https://phabricator.wikimedia.org/T106580>.
 #    TODO: Optimizar funciones y reducir sus costes en tiempo y memoria.
 #    TODO: i18n.
+#    TODO: Detectar omisiones de la extensión al introducir el nombre del
+#              fichero de CSV, y añadir tal extensión automáticamente.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
 #
