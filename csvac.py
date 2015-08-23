@@ -139,6 +139,7 @@ if DIR_PWB:
     sys.path.append(os.path.join(DIR_PWB,"scripts"))
     import upload
     import login
+    SITE_PWB = pywikibot.Site('commons', 'commons')
 
 #### Hashes ############################################################
 
@@ -169,26 +170,21 @@ def login_pwb ():
     """Inicia sesión en Wikimedia Commons con Pywikibot core."""
     #bot = raw_input("Nombre de usuario: ")
     if not SIMULACION:
-        #login.main(u"-family:test",
-        #           u"-lang:test")
-        login.main(u"-family:commons",
-                   u"-lang:commons")
+        SITE_PWB.login()
 
 def subir (cfg, f, fdestino, descr):
     """Trata de subir el fichero de nombre [f] a Wikimedia Commons con
     el nombre [fdestino] y la descripción [descr].
     """
     if not SIMULACION:
-        #upload.main(u'-family:test',
-        #            u'-lang:test',
-        upload.main(u'-family:commons',
-                    u'-lang:commons',
-                    u'-keep',
-                    u'-noverify',
-                    u'-abortonwarn',
-                    u'-filename:{}'.format(fdestino),
-                    os.path.join(cfg["nombreDir"], f),
-                    u'{}'.format(descr))
+        bot = UploadRobot(url=[os.path.join(cfg["nombreDir"], f)],
+                          description=descr,
+                          useFilename=fdestino,
+                          keepFilename=True,
+                          verifyDescription=False,
+                          ignoreWarning=False,
+                          targetSite=SITE_PWB)
+        bot.run()
     return 0
 
 #### CSV ###############################################################
