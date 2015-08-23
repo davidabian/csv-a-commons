@@ -139,7 +139,6 @@ if DIR_PWB:
     import pywikibot
     sys.path.append(os.path.join(DIR_PWB,"scripts"))
     import upload
-    import login
     #SITE_PWB = pywikibot.Site('test', 'test')
     SITE_PWB = pywikibot.Site('commons', 'commons')
 
