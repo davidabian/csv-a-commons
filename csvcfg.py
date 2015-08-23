@@ -38,11 +38,10 @@ def regex (campo):
         #  Las reglas, una por línea, deben seguir el siguiente formato:
         #  "NOMBREDELCAMPO": "\A[Rr]egex[A-Z]$",
         #
-        "NOMBREDELCAMPO1": "\A[Rr]egex1$",
-        "NOMBREDELCAMPO2": "\Aregex?2$",
+        "NOMBREDELCAMPO": "\A[Rr]egex[A-Z]$",
     }
-    if campo in dictReglas:
-        return dictReglas[campo]
+    if regla in dictReglas:
+        return dictReglas[regla]
     else:
         return ""
 
@@ -57,54 +56,50 @@ def descripcion (datos, fila):
     """
     return u"Descripción de prueba. {{testing with\n|1=%s\n|2=%s\n}}\nThat's all." \
            % csvac.valores(datos,fila,[\
-                                    "CAMPO1",\
-                                    "CAMPO2",\
+                                    u"CAMPO1",\
+                                    u"CAMPO2",\
                                    ])
 
 ########################################################################
 ##
 ########################################################################
 
-def entorno (campo):
-    dictVar = {
-        # Directorio donde se encuentran los ficheros para subir,
-        # terminado en una barra o en una contrabarra, según corresponda,
-        # o bien vacío para indicar que los ficheros se encuentran en el
-        # directorio actual.
-        "dirarchivos": "/home/usuario/csv-a-commons/",
+def cte ():
+    dictCte = {
+        # Directorio donde se encuentran los ficheros que subir y el
+        # fichero de CSV.
+        "nombreDir": "/home/usuario/csv-commons/",
         
         # Nombre del fichero de CSV donde se recogen los ficheros para
         # subir y su información, ubicado en [dirarchivos].
-        "nombrecsv": u"Fonoteca.csv",
+        "nombreCsv": u"nombreDelArchivo.csv",
         
         # Nombre del campo del fichero de CSV que indica los nombres
-        # originales de los ficheros para subir.
-        "nombresorigen": "CAMPODENOMBRESDEFICHERO",
+        # originales de los ficheros que subir.
+        "campoNombres0": "Nombre fichero local",
         
         # Nombre del campo del fichero de CSV que indica los nombres
         # que tomarán en Wikimedia Commons los ficheros para subir.
-        #"nombresdestino": "NOMBREDEFINITIVO",
-    }
-    return dictVar[campo]
-
-def cte (campo):
-    dictCte = {
+        "campoNombresC": "Nombre fichero en Commons",
+        
         # Minutos transcurridos desde el inicio o la reanudación del
         # proceso de subida para sugerir un descanso al operador.
-        "tdescanso": 30,
+        "tDescanso": 30,
+        
+        # Segundos mínimos de espera entre una subida y la siguiente.
+        "tEspera": 1,
         
         # Número de ficheros que subir en la tanda inicial.
-        "tanda0": 15,
+        "tanda0": 5,
+        
+        # Número de subidas que deben ser aprobadas por el operador
+        # en cada tanda. Número entero menor o igual que [tanda0].
+        "aprobar": 3,
         
         # Constante multiplicativa que va incrementando el número de
         # ficheros que tratar en cada tanda.
         # Número real mayor o igual que 1.
-        "crecimientotanda": 1.5,
-        
-        # Número de subidas que deben ser aprobadas por el operador
-        # en cada tanda. Número entero menor o igual que [tanda0].
-        "conaprobacion": 7,
+        "crecimTanda": 1.5,
     }
-    return dictCte[campo]
-
+    return dictCte
         
