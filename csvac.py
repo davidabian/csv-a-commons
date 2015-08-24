@@ -10,12 +10,8 @@
 #
 #    TODO: Comprobar que los campos que reflejen la duración de las
 #              posibles pistas de audio posean los valores correctos.
-#    TODO: Detectar si la sesión se inicia correctamente con Pywikibot.
-#              Véase T106580 <https://phabricator.wikimedia.org/T106580>.
 #    TODO: Optimizar funciones y reducir sus costes en tiempo y memoria.
 #    TODO: i18n.
-#    TODO: Detectar omisiones de la extensión al introducir el nombre del
-#              fichero de CSV, y añadir tal extensión automáticamente.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
 #
@@ -171,9 +167,18 @@ def log_hash (cfg, f):
 
 def login_pwb ():
     """Inicia sesión en Wikimedia Commons con Pywikibot core."""
-    #bot = raw_input("Nombre de usuario: ")
     if not SIMULACION:
         SITE_PWB.login()
+        while not SITE_PWB.logged_in():
+            abilog.error(u"No se ha iniciado sesión en {} con "
+                         u"Pywikibot.".format(SITE_PWB))
+            time.sleep(1.5)
+            print
+            SITE_PWB.login()
+            time.sleep(1.5)
+    elif not SITE_PWB.logged_in():
+        abilog.error(u"No se ha iniciado sesión en {} con "
+                     u"Pywikibot.".format(SITE_PWB))
 
 def subir (cfg, f, fdestino, descr):
     """Trata de subir el fichero de nombre [f] a Wikimedia Commons con
@@ -187,7 +192,7 @@ def subir (cfg, f, fdestino, descr):
                                  verifyDescription=False,
                                  ignoreWarning=False,
                                  targetSite=SITE_PWB,
-                                 aborts=True
+                                 aborts=True,
                                  always=True)
         bot.run()
     return 0
@@ -195,8 +200,9 @@ def subir (cfg, f, fdestino, descr):
 #### CSV ###############################################################
 
 def leer_csv (cfg):
-    """Lee el fichero de CSV de nombre [nombrecsv], decodifica su
-    contenido usando UTF-8 y lo devuelve en forma de lista.
+    """Lee el fichero de CSV de nombre cfg["nombreCsv"], en el
+    directorio cfg["nombreDir"], decodifica su contenido usando UTF-8 y
+    lo devuelve en forma de lista.
     
     La estructura de la lista devuelta es:
         [fila_1,fila_2,...,fila_i], donde
@@ -292,7 +298,8 @@ def guardar_fila (cfg, ifila):
 
 def cargar_fila (cfg):
     """Carga el contenido del fichero de texto
-    cfg["nombreCsv"].NOBORRAR.ifila y lo devuelve.
+    cfg["nombreCsv"].NOBORRAR.ifila, en el directorio cfg["nombreDir"],
+    y lo devuelve.
     """
     rutaf = "{}.NOBORRAR.ifila".format(os.path.join(cfg["nombreDir"], 
                                                     cfg["nombreCsv"]))
@@ -348,34 +355,59 @@ def comprobar_ficheros (cfg, datos):
     """Comprueba:
         * que no haya filas con nombres de ficheros vacíos;
         * que no haya filas con nombres de ficheros repetidos;
-        * que todos los ficheros indicados existan.
+        * que todos los ficheros locales indicados existan;
+        * que todos los nombres de destino de los ficheros tengan
+              extensión.
     
     Si la comprobación no es exitosa, devuelve el motivo. Si lo es,
     devuelve None.
     """
-    ncamponombre = nombre_num_campo(datos[0], cfg["campoNombres0"])
+    # Número de orden del campo de nombres de origen de los ficheros
+    nCampoNombres0 = nombre_num_campo(datos[0], cfg["campoNombres0"])
+    # Número de orden del campo de nombres de destino de los ficheros
+    nCampoNombresC = nombre_num_campo(datos[0], cfg["campoNombresC"])
     nfila = 1
     for fila in datos[1:]:
-        if not fila[ncamponombre]:
-            return (u"Hay ficheros sin un nombre especificado en el campo "
-                    u"«{}» de «{}».".format(cfg["campoNombres0"],
-                                            cfg["nombreCsv"]))
+        # Análsis de los nombres de origen de los ficheros
+        if not fila[nCampoNombres0]:
+            return (u"Hay ficheros sin un nombre especificado en el "
+                    u"campo «{}» de «{}».".format(cfg["campoNombres0"],
+                                                  cfg["nombreCsv"]))
         else:
-            rutafichero = os.path.join(cfg["nombreDir"], fila[ncamponombre])
-            
-            if not SIMULACION and not os.path.isfile(rutafichero):
+            rutaf0 = os.path.join(cfg["nombreDir"],
+                                  fila[nCampoNombres0])
+            if not SIMULACION and not os.path.isfile(rutaf0):
                 return (u"No se encuentra el fichero «{}». "
                         u"Es posible que no exista o que no sea "
-                        u"legible.".format(rutafichero))
+                        u"legible.".format(rutaf0))
         for nfilacmp in range(nfila+1, len(datos[1:])):
-            if fila[ncamponombre] == datos[nfilacmp][ncamponombre]:
-                return (u"Error. El nombre de fichero «{}» está "
-                        u"contemplado más de una vez en "
-                        u"«{}».".format(fila[ncamponombre], nombrecsv))
+            if fila[nCampoNombres0] == datos[nfilacmp][nCampoNombres0]:
+                return (u"El nombre de fichero «{}» está contemplado "
+                        u"más de una vez en "
+                        u"«{}».".format(fila[nCampoNombres0],
+                                        cfg["nombreCsv"]))
+        # Análsis de los nombres de destino los ficheros
+        if not fila[nCampoNombresC]:
+            return (u"Hay ficheros sin un nombre especificado en el "
+                    u"campo «{}» de «{}».".format(cfg["campoNombresC"],
+                                                  cfg["nombreCsv"]))
+        elif "." not in fila[nCampoNombresC]:
+            return (u"El archivo «{}», en la {}.ª fila de información "
+                    u"del fichero «{}», no tiene un nombre final "
+                    u"válido para la subida porque carece de "
+                    u"extensión.".format(fila[nCampoNombresC],
+                                         nfila,
+                                         cfg["nombreCsv"]))
+        for nfilacmp in range(nfila+1, len(datos[1:])):
+            if fila[nCampoNombresC] == datos[nfilacmp][nCampoNombresC]:
+                return (u"El nombre de fichero «{}» está contemplado "
+                        u"más de una vez en "
+                        u"«{}».".format(fila[nCampoNombresC],
+                                        cfg["nombreCsv"]))
         nfila += 1
     return None
 
-def comprobar_fila (cfg, datos, fila):
+def comprobar_fila (datos, fila):
     """Comprueba si la información de la fila con número de orden [fila]
     del conjunto de datos [datos] es correcta.
     
@@ -391,8 +423,8 @@ def comprobar_fila (cfg, datos, fila):
     return None
 
 def comprobar_campos (cfg, datos):
-    """Comprueba que los campos del conjunto de datos [datos] sean
-    válidos.
+    """Comprueba que los nombres de los campos del conjunto de datos
+    [datos] sean válidos.
     
     Esto es:
         * no hay campos repetidos;
@@ -401,26 +433,29 @@ def comprobar_campos (cfg, datos):
         * existe el campo donde se indica el nombre de los ficheros.
     Si no son válidos, devuelve un motivo. Si lo son, devuelve None.
     """
-    nCampos = len(datos[0])
-    if nCampos < 2:
-        return u"No hay suficientes campos en el conjunto de datos."
+    campos = datos[0]
+    if len(campos) < 2:
+        return (u"No hay suficientes campos en el conjunto de datos, o "
+                u"bien el fichero de CSV no está construido con comas "
+                u"como separadores de campos.")
     else:
-        for i in range(nCampos):
-            if not datos[0][i]:
+        for i in range(len(campos)):
+            if not campos[i]:
                 return u"Hay uno o más campos sin nombre."
             else:
-                if datos[0].count(datos[0][i]) > 1:
+                if campos.count(campos[i]) > 1:
                     return (u"El campo «{}» está "
-                            u"repetido.".format(datos[0][i]))
-    camponombre = cfg["campoNombres0"]
-    existecamponombre = False
-    for campo in datos[0]:
-        if campo == camponombre:
-            existecamponombre = True
-    if not existecamponombre:
+                            u"repetido.".format(campos[i]))
+    if cfg["campoNombres0"] not in campos:
         return (u"El campo «{}», configurado para albergar los "
-                u"nombres de los ficheros, no se encuentra recogido "
-                u"en «{}».".format(camponombre, cfg["nombreCsv"]))
+                u"nombres locales de los ficheros, no se encuentra "
+                u"recogido en "
+                u"«{}».".format(cfg["campoNombres0"], cfg["nombreCsv"]))
+    if cfg["campoNombresC"] not in campos:
+        return (u"El campo «{}», configurado para albergar los "
+                u"nombres finales de los ficheros en Wikimedia Commons, "
+                u"no se encuentra recogido en "
+                u"«{}».".format(cfg["campoNombresC"], cfg["nombreCsv"]))
     abilog.info(u"Los nombres de los campos son válidos.")
     return None
 
@@ -465,7 +500,7 @@ def comprobar_todo (cfg, datos):
                 else:
                     division = 10
                 for fila in range(1,lendatos):
-                    comprobacion = comprobar_fila(cfg,datos,fila)
+                    comprobacion = comprobar_fila(datos,fila)
                     if comprobacion:
                         break
                     if fila % division == 0:
@@ -518,7 +553,7 @@ def comprobar_subida (cfg, f):
 #### Interacción #######################################################
 
 def descansar (tDescansoSeg):
-    """Indica al operador que lleva más de [tDescanso]/60 minutos de
+    """Indica al operador que lleva más de [tDescansoSeg] segundos de
     procesamiento ininterrumpido de archivos hasta el momento, y sugiere
     un descanso.
     """
@@ -762,6 +797,10 @@ def obtener_cfg ():
               u"configuración, no existe o no es un "
               u"directorio.".format(tmp["nombreDir"]))
     else:
+        #
+        #  Superadas todas las pruebas, el valor del archivo de
+        #  configuración se considera válido y se adopta.
+        #
         cfg["nombreDir"] = tmp["nombreDir"]
     if error:
         if INTERACTIVO:
@@ -800,11 +839,23 @@ def obtener_cfg ():
               u"configuración, no se reconoce como una cadena de "
               u"texto.".format(tmp["nombreCsv"]))
     elif not os.path.isfile(tmp["nombreCsv"]):
-        error = True
-        print(u"ERROR: El fichero «{}», definido en el archivo de "
-              u"configuración, no existe en el directorio «{}» o no es "
-              u"un fichero.".format(tmp["nombreCsv"],cfg["nombreDir"]))
+        if os.path.isfile(u"{}.csv".format(tmp["nombreCsv"])):
+            # Detectar omisión de la extensión .csv
+            cfg["nombreCsv"] = u"{}.csv".format(tmp["nombreCsv"])
+        elif os.path.isfile(u"{}.CSV".format(tmp["nombreCsv"])):
+            # Detectar omisión de la extensión .CSV
+            cfg["nombreCsv"] = u"{}.CSV".format(tmp["nombreCsv"])
+        else:
+            error = True
+            print(u"ERROR: El fichero «{}», definido en el archivo de "
+                  u"configuración, no existe en el directorio «{}» o "
+                  u"no es un fichero.".format(tmp["nombreCsv"],
+                                              cfg["nombreDir"]))
     else:
+        #
+        #  Superadas todas las pruebas, el valor del archivo de
+        #  configuración se considera válido y se adopta.
+        #
         cfg["nombreCsv"] = tmp["nombreCsv"]
     if error:
         if INTERACTIVO:
@@ -816,13 +867,19 @@ def obtener_cfg ():
                 if tmp["nombreCsv"] == "":
                     print(u"ERROR: No ha escrito nada.")
                 elif not os.path.isfile(tmp["nombreCsv"]):
-                    print(u"ERROR: El fichero indicado no es válido o "
-                          u"no existe.")
+                    if os.path.isfile(u"{}.csv".format(tmp["nombreCsv"])):
+                        # Detectar omisión de la extensión .csv
+                        cfg["nombreCsv"] = u"{}.csv".format(tmp["nombreCsv"])
+                    elif os.path.isfile(u"{}.CSV".format(tmp["nombreCsv"])):
+                        # Detectar omisión de la extensión .CSV
+                        cfg["nombreCsv"] = u"{}.CSV".format(tmp["nombreCsv"])
+                    else:
+                        print(u"ERROR: El fichero indicado no es válido "
+                              u"o no existe.")
                 else:
                     cfg["nombreCsv"] = tmp["nombreCsv"]
         else:
             sys.exit()
-    if error:
         print
     
     ##
