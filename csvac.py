@@ -270,7 +270,8 @@ def copia_seguridad (nombrefichero):
     """Crea una copia de seguridad del fichero de nombre [nombrefichero]
     con la fecha y la hora actuales.
     
-    Devuelve None si todo va bien.
+    Devuelve None si todo va bien, o un mensaje de error en caso
+    contrario.
     """
     if os.path.isfile(nombrefichero):
         fi = open(u"{}".format(nombrefichero), 'r')
@@ -319,13 +320,13 @@ def cargar_fila (cfg):
                          u"(«{}»).".format(cfg["nombreCsv"], contenido))
         else:
             abilog.aviso(u"El archivo «{}.NOBORRAR.ifila» existe, "
-                         u"pero su contenido («{}») es incoherente y se "
-                         u"ignora.".format(cfg["nombreCsv"], contenido))
+                         u"pero su contenido es incoherente y se "
+                         u"ignora.".format(cfg["nombreCsv"]))
             contenido = 0
     else:
-        contenido = 0
         abilog.debug(u"El archivo «{}.NOBORRAR.ifila» no existe. "
                      u"Se genera desde cero.".format(cfg["nombreCsv"]))
+        contenido = 0
     return contenido
 
 def archivo_de_fila (cfg, datos, nfila):
