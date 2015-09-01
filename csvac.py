@@ -122,12 +122,22 @@ def comprobar_pwb():
         dirPosible = os.path.abspath(dirPosible)
         check1 = os.path.join(dirPosible,"pwb.py")
         check2 = os.path.join(dirPosible,"scripts","upload.py")
-        if os.path.isfile(check1) and os.path.isfile(check2):
+        check3 = os.path.join(dirPosible,"scripts","login.py")
+        if os.path.isfile(check1) and \
+           os.path.isfile(check2) and \
+           os.path.isfile(check3):
             directorio = dirPosible
             break
     if directorio is None:
         print(u"ERROR: No se encuentra una instalación de Pywikibot "
               u"core en las proximidades del directorio actual.")
+    elif not os.path.isfile(os.path.join(directorio,"user-config.py")):
+        print(u"ERROR: No hay un archivo de configuración de Pywikibot "
+              u"(user-config.py) en el directorio "
+              u"{}.".format(directorio))
+        print(u"Consulte la documentación de Pywikibot y los detalles "
+              u"de su configuración.")
+        directorio = None
     return directorio
 
 DIR_PWB = comprobar_pwb()
@@ -807,8 +817,8 @@ def obtener_cfg ():
         if INTERACTIVO:
             while not cfg["nombreDir"]:
                 print(u"\nEscriba la ruta completa del directorio "
-                      u"en que se encuentran los ficheros que subir "
-                      u"y el fichero de CSV.")
+                      u"en que se encuentran tanto los ficheros que "
+                      u"subir como el fichero de CSV.")
                 tmp["nombreDir"] = raw_input("> ")
                 if tmp["nombreDir"] == "":
                     print(u"ERROR: No ha escrito nada.")
@@ -839,11 +849,14 @@ def obtener_cfg ():
         print(u"ERROR: El nombre «{}», definido en el archivo de "
               u"configuración, no se reconoce como una cadena de "
               u"texto.".format(tmp["nombreCsv"]))
-    elif not os.path.isfile(tmp["nombreCsv"]):
-        if os.path.isfile(u"{}.csv".format(tmp["nombreCsv"])):
+    elif not os.path.isfile(os.path.join(cfg["nombreDir"],
+                                         tmp["nombreCsv"])):
+        if os.path.isfile(u"{}.csv".format(os.path.join(cfg["nombreDir"],
+                                                        tmp["nombreCsv"]))):
             # Detectar omisión de la extensión .csv
             cfg["nombreCsv"] = u"{}.csv".format(tmp["nombreCsv"])
-        elif os.path.isfile(u"{}.CSV".format(tmp["nombreCsv"])):
+        elif os.path.isfile(u"{}.CSV".format(os.path.join(cfg["nombreDir"],
+                                                          tmp["nombreCsv"]))):
             # Detectar omisión de la extensión .CSV
             cfg["nombreCsv"] = u"{}.CSV".format(tmp["nombreCsv"])
         else:
