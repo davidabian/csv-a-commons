@@ -11,6 +11,8 @@
 #    TODO: Comprobar que los campos que reflejen la duración de las
 #              posibles pistas de audio posean los valores correctos.
 #    TODO: Optimizar funciones y reducir sus costes en tiempo y memoria.
+#    TODO: Posibilidad de que el operador introduzca la ruta de
+#              instalación de Pywikibot en caso de que no se encuentre.
 #    TODO: i18n.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
@@ -72,51 +74,62 @@ def comprobar_pwb():
     Devuelve la ruta de dicha instalación si se encuentra, o bien None
     si no se encuentra, emitiendo un error en este último caso.
     """
-    dirPosibles = [os.path.join(""),
-                   os.path.join("..",""),
-                   os.path.join("..","..",""),
-                   os.path.join("core",""),
-                   os.path.join("..","core",""),
-                   os.path.join("..","..","core",""),
-                   os.path.join("core","core",""),
-                   os.path.join("..","core","core",""),
-                   os.path.join("..","..","core","core",""),
-                   os.path.join("Core",""),
-                   os.path.join("..","Core",""),
-                   os.path.join("..","..","Core",""),
-                   os.path.join("rewrite",""),
-                   os.path.join("..","rewrite",""),
-                   os.path.join("..","..","rewrite",""),
-                   os.path.join("pywikibot",""),
-                   os.path.join("..","pywikibot",""),
-                   os.path.join("..","..","pywikibot",""),
-                   os.path.join("Pywikibot",""),
-                   os.path.join("..","Pywikibot",""),
-                   os.path.join("..","..","Pywikibot",""),
-                   os.path.join("pywikibot","core",""),
-                   os.path.join("..","pywikibot","core",""),
-                   os.path.join("..","..","pywikibot","core",""),
-                   os.path.join("Pywikibot","core",""),
-                   os.path.join("..","Pywikibot","core",""),
-                   os.path.join("..","..","Pywikibot","core",""),
-                   os.path.join("pwb",""),
-                   os.path.join("..","pwb",""),
-                   os.path.join("..","..","pwb",""),
-                   os.path.join("pywikipedia",""),
-                   os.path.join("..","pywikipedia",""),
-                   os.path.join("..","..","pywikipedia",""),
-                   os.path.join("Pywikipedia",""),
-                   os.path.join("..","Pywikipedia",""),
-                   os.path.join("..","..","Pywikipedia",""),
-                   os.path.join("Pywikipedia","core",""),
-                   os.path.join("..","Pywikipedia","core",""),
-                   os.path.join("..","..","Pywikipedia","core",""),
-                   os.path.join("pywikipediabot",""),
-                   os.path.join("..","pywikipediabot",""),
-                   os.path.join("..","..","pywikipediabot",""),
-                   os.path.join("Pywikipediabot",""),
-                   os.path.join("..","Pywikipediabot",""),
-                   os.path.join("..","..","Pywikipediabot",""),]
+    nombresPosibles = [
+                       "Archivos comunes",
+                       "Archivos de programa",
+                       "Common Files",
+                       "Common Program Files",
+                       "core",
+                       "Core",
+                       "CORE",
+                       "Program Files",
+                       "Program Files (x86)",
+                       "pwb",
+                       "Pwb",
+                       "PWB",
+                       "pwp",
+                       "Pwp",
+                       "PWP",
+                       "python",
+                       "Python",
+                       "Python27",
+                       "pywb",
+                       "Pywb",
+                       "pywiki",
+                       "Pywiki",
+                       "pywikibot",
+                       "Pywikibot",
+                       "PYWIKIBOT",
+                       "pywikipedia",
+                       "Pywikipedia",
+                       "pywikipediabot",
+                       "Pywikipediabot",
+                       "rewrite",
+                       "Rewrite",
+                       "w",
+                       "W",
+                       "wiki",
+                       "Wiki",
+                       "WIKI",
+                       "wikipedia",
+                       "Wikipedia",
+                       "WikiPedia",
+                       "WIKIPEDIA",
+                       "wp",
+                       "Wp",
+                       "WP",
+                      ]
+    dirPosibles = [os.path.join("")]
+    for nombre1 in nombresPosibles:
+        dirPosibles.append(os.path.join(nombre1,""))
+        dirPosibles.append(os.path.join("..",nombre1,""))
+        dirPosibles.append(os.path.join("..","..",nombre1,""))
+        dirPosibles.append(os.path.join("..","..","..",nombre1,""))
+        for nombre2 in nombresPosibles:
+            dirPosibles.append(os.path.join(nombre1,nombre2,""))
+            dirPosibles.append(os.path.join("..",nombre1,nombre2,""))
+            dirPosibles.append(os.path.join("..","..",nombre1,nombre2,""))
+            dirPosibles.append(os.path.join("..","..","..",nombre1,nombre2,""))
     directorio = None
     for dirPosible in dirPosibles:
         dirPosible = os.path.abspath(dirPosible)
