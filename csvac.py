@@ -639,8 +639,8 @@ def bucle (cfg, datos, nultimof):
                         u"ahora: {}".format(cfg["nombreCsv"],nfila-1))
             abilog.info(u"Total de ficheros por subir: "
                         u"{}".format(len(datos)-nfila))
-            completado = (nfila-1)*100/(len(datos)-1)
-            abilog.info(u"Completado: {:.2f} %".format(completado))
+            completado = (float(nfila)-1)*100/(float(len(datos))-1)
+            abilog.info(u"Completado: {:.3f} %".format(completado))
             tanda = int(tanda * cfg["crecimTanda"])
             if INTERACTIVO:
                 tmp = random.randint(0, 6)
@@ -899,7 +899,8 @@ def obtener_cfg ():
     ##
     ##  Configuración del fichero de registros
     ##
-    abilog.config(u"{}.log".format(cfg["nombreCsv"]))
+    abilog.config(u"{}.log".format(os.path.join(cfg["nombreDir"],
+                                                cfg["nombreCsv"])))
     
     ##
     ##  Campo con los nombres locales de los ficheros que subir
@@ -1169,7 +1170,6 @@ def main ():
     if not (DIR_PWB or SIMULACION):
         sys.exit()
     cfg = obtener_cfg()
-    print chr(27) + "[2J" # limpiar pantalla
     abilog.debug(u"---")
     abilog.debug(u"Se inicia el programa.")
     try:
