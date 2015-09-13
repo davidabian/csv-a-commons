@@ -732,7 +732,7 @@ def bucle (cfg, datos, nultimof):
         fdestino = archivo_destino_de_fila(cfg, datos, nfila)
         abilog.info(u"Archivo en Commons: {}".format(fdestino))
         descr = csvcfg.descripcion(datos,nfila)
-        print "Descripción:"
+        print u"Descripción:"
         print descr
         print '-' * 80
         if INTERACTIVO and correctos < cfg["aprobar"]:
