@@ -404,12 +404,6 @@ def comprobar_ficheros (cfg, datos):
                 return (u"No se encuentra el fichero «{}». "
                         u"Es posible que no exista o que no sea "
                         u"legible.".format(rutaf0))
-        for nfilacmp in range(nfila+1, len(datos[1:])):
-            if fila[nCampoNombres0] == datos[nfilacmp][nCampoNombres0]:
-                return (u"El nombre de fichero «{}» está contemplado "
-                        u"más de una vez en "
-                        u"«{}».".format(fila[nCampoNombres0],
-                                        cfg["nombreCsv"]))
         # Análsis de los nombres de destino los ficheros
         if not fila[nCampoNombresC]:
             return (u"Hay ficheros sin un nombre especificado en el "
@@ -422,8 +416,14 @@ def comprobar_ficheros (cfg, datos):
                     u"extensión.".format(fila[nCampoNombresC],
                                          nfila,
                                          cfg["nombreCsv"]))
+        # Análisis de nombres de origen o de destino duplicados
         for nfilacmp in range(nfila+1, len(datos[1:])):
-            if fila[nCampoNombresC] == datos[nfilacmp][nCampoNombresC]:
+            if fila[nCampoNombres0] == datos[nfilacmp][nCampoNombres0]:
+                return (u"El nombre de fichero «{}» está contemplado "
+                        u"más de una vez en "
+                        u"«{}».".format(fila[nCampoNombres0],
+                                        cfg["nombreCsv"]))
+            elif fila[nCampoNombresC] == datos[nfilacmp][nCampoNombresC]:
                 return (u"El nombre de fichero «{}» está contemplado "
                         u"más de una vez en "
                         u"«{}».".format(fila[nCampoNombresC],
