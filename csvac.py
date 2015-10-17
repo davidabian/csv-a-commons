@@ -13,6 +13,10 @@
 #    TODO: Optimizar funciones y reducir sus costes en tiempo y memoria.
 #    TODO: Posibilidad de que el operador introduzca la ruta de
 #              instalación de Pywikibot en caso de que no se encuentre.
+#    TODO: Incluir limitación forzosa del número de caracteres de los
+#              nombres finales de ficheros.
+#    TODO: Impedir el uso de ':', '¿', '?', etc. en nombres finales de
+#              ficheros.
 #    TODO: i18n.
 #
 #   Copyright (C) 2015, David Abián <da [at] davidabian.com>
@@ -733,7 +737,7 @@ def bucle (cfg, datos, nultimof):
         abilog.info(u"Archivo en Commons: {}".format(fdestino))
         descr = csvcfg.descripcion(datos,nfila)
         print u"Descripción:"
-        print descr
+        print descr.encode(sys.stdout.encoding, errors='replace')
         print '-' * 80
         if INTERACTIVO and correctos < cfg["aprobar"]:
             preg = u"¿Son correctos los datos indicados?"
